@@ -1,10 +1,9 @@
-# DISASTER WARNING DASHBOARD - NATIONAL EMERGENCY INTELLIGENCE SYSTEM
-
+# DISASTER WARNING DASHBOARD 
 The Disaster Warning Dashboard is a sophisticated, single-page frontend intelligence matrix designed for real-time monitoring and management of natural calamities across India. It integrates geospatial data, meteorological analytics, and rescue operations into a unified high-tech command interface.
 
 ## 🚀 KEY FEATURES
 
-### Multi-Dimensional Intelligence
+
 * Live Threat Watch: A real-time tracking panel showing active "Severe Alert Protocols" for high-risk states.
 * Interactive Geospatial Map: A Leaflet-powered dark-mode map pinpointing disaster zones with pulsing indicators.
 * Meteorological Forecast: A comprehensive database of weather conditions across all 36 States and Union Territories, including temperature, rain %, and AQI.
