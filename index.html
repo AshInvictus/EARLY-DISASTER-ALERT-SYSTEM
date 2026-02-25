@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Disaster Warning System</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
 <style>
-/* === FULL ORIGINAL CSS (UNCHANGED) === */
+/* ===== FULL ORIGINAL CSS ===== */
 :root {
 --bg:#0b0f1a;
 --panel:#1e293b;
@@ -30,22 +30,19 @@ header{height:65px;background:var(--glass);border-bottom:1px solid var(--border)
 .nav-item.active,.nav-item:hover{background:var(--accent);color:#0b0f1a;font-weight:600;}
 .page{display:none;height:calc(100vh - 65px);padding:20px;overflow-y:auto;}
 .page.active{display:grid;gap:20px;}
-#page-home{grid-template-columns:320px 1fr 350px;}
-#page-weather{grid-template-columns:1fr;}
+#page-analytics{grid-template-columns:1fr 1fr;}
+#page-rescue{grid-template-columns:1fr;}
+.analytics-stats{grid-column:span 2;display:grid;grid-template-columns:repeat(5,1fr);gap:15px;}
+.chart-container{background:var(--panel);border-radius:16px;padding:20px;border:1px solid var(--border);height:320px;}
 .panel{background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:18px;display:flex;flex-direction:column;}
 .panel h3{font-size:0.9rem;text-transform:uppercase;color:var(--accent);margin-bottom:15px;}
 .dir-table{width:100%;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden;}
 .dir-table th,.dir-table td{padding:14px;text-align:left;border-bottom:1px solid var(--border);font-size:0.9rem;}
 .dir-table th{background:rgba(255,255,255,0.05);color:var(--accent);}
 .state-card{background:rgba(255,255,255,0.05);padding:12px;border-radius:10px;margin-bottom:10px;border-left:4px solid var(--accent);}
-.sos-btn{background:var(--danger);border:none;color:white;padding:15px;border-radius:12px;font-weight:bold;cursor:pointer;width:100%;margin-top:auto;}
-#map{height:100%;width:100%;border-radius:12px;}
-.aqi-pill{padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:bold;}
-.aqi-good{background:rgba(16,185,129,0.1);color:var(--success);border:1px solid var(--success);}
-.aqi-mod{background:rgba(251,191,36,0.1);color:var(--warning);border:1px solid var(--warning);}
-.aqi-poor{background:rgba(239,68,68,0.1);color:var(--danger);border:1px solid var(--danger);}
 </style>
 </head>
+
 <body>
 
 <header>
@@ -55,10 +52,10 @@ DISASTER WARNING DASHBOARD
 </div>
 
 <nav class="nav-links">
-<div class="nav-item active" onclick="showPage('page-home',this)">HOME</div>
-<div class="nav-item" onclick="showPage('page-weather',this)">WEATHER REPORT</div>
-<div class="nav-item">DATA ANALYTICS</div>
-<div class="nav-item">RESCUE OPS</div>
+<div class="nav-item">HOME</div>
+<div class="nav-item">WEATHER REPORT</div>
+<div class="nav-item active" onclick="showPage('page-analytics',this)">DATA ANALYTICS</div>
+<div class="nav-item" onclick="showPage('page-rescue',this)">RESCUE OPS</div>
 <div class="nav-item">CONTACT</div>
 <div class="nav-item">DISASTER ARCHIVES</div>
 <div class="nav-item">AWARENESS</div>
@@ -67,47 +64,142 @@ DISASTER WARNING DASHBOARD
 <span id="live-clock" style="color:var(--warning);font-family:monospace;font-weight:bold;"></span>
 </header>
 
-<div id="page-home" class="page active">
-<div class="panel">
-<h3>Threat Watch</h3>
-<div id="state-list"></div>
-<button class="sos-btn" onclick="triggerSOS()">INITIALIZE MASS ALERT</button>
+<!-- ================= ANALYTICS ================= -->
+<div id="page-analytics" class="page active">
+
+<div class="analytics-stats">
+<div class="panel"><h4>Wind Speed</h4><h2 style="color:var(--warning)">82 km/h</h2></div>
+<div class="panel"><h4>River Level</h4><h2 style="color:var(--accent)">8.4 m</h2></div>
+<div class="panel"><h4>Flood Depth</h4><h2 style="color:var(--danger)">1.7 m</h2></div>
+<div class="panel"><h4>Pressure</h4><h2 style="color:var(--success)">986 hPa</h2></div>
+<div class="panel"><h4>Storm Surge</h4><h2 style="color:var(--danger)">3.2 m</h2></div>
 </div>
 
-<div class="panel" style="padding:0">
-<div id="map"></div>
+<div class="chart-container"><canvas id="windChart"></canvas></div>
+<div class="chart-container"><canvas id="riverChart"></canvas></div>
+<div class="chart-container"><canvas id="floodChart"></canvas></div>
+<div class="chart-container"><canvas id="pressureChart"></canvas></div>
+<div class="chart-container" style="grid-column:span 2;"><canvas id="stormChart"></canvas></div>
+
 </div>
 
-<div class="panel">
-<h3>Live Intelligence Feed</h3>
-<div id="incident-feed"></div>
-</div>
-</div>
+<!-- ================= RESCUE OPS ================= -->
+<div id="page-rescue" class="page">
 
-<div id="page-weather" class="page">
 <div class="panel">
-<h3>National Meteorological Forecast</h3>
+<h3>Zonal Rescue Intelligence Matrix</h3>
 <table class="dir-table">
 <thead>
 <tr>
-<th>State</th>
-<th>Temp</th>
-<th>Rain%</th>
-<th>Wind</th>
-<th>AQI</th>
+<th>Zone</th>
+<th>Teams</th>
+<th>Evacuated</th>
+<th>Camps</th>
+<th>Assets</th>
+<th>Risk</th>
 </tr>
 </thead>
-<tbody id="weather-body"></tbody>
+<tbody id="rescue-body"></tbody>
 </table>
 </div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+<div class="panel">
+<h3>Supply Drops</h3>
+<div id="supply-feed"></div>
+</div>
+<div class="panel">
+<h3>Comms Status</h3>
+<div id="comms-feed"></div>
+</div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</div>
+
 <script>
 
-/* ===== CLOCK ===== */
+/* CLOCK */
 setInterval(()=>{document.getElementById('live-clock').innerText=new Date().toLocaleTimeString('en-IN');},1000);
 
+/* NAVIGATION */
+function showPage(id,el){
+document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+el.classList.add('active');
+if(id==='page-analytics') initCharts();
+}
+
+/* ================= FULL ZONAL DATA ================= */
+const zonalRescueData=[
+{zone:"North India",teams:12,evacuated:"1,200",camps:15,assets:12,risk:"Medium"},
+{zone:"South India",teams:8,evacuated:"4,500",camps:28,assets:18,risk:"High"},
+{zone:"East India",teams:15,evacuated:"6,100",camps:32,assets:24,risk:"Critical"},
+{zone:"West India",teams:4,evacuated:"450",camps:5,assets:6,risk:"Low"},
+{zone:"Central India",teams:3,evacuated:"230",camps:5,assets:4,risk:"Low"}
+];
+
+zonalRescueData.forEach(z=>{
+let rColor=z.risk==="Critical"?"var(--danger)":(z.risk==="High"?"var(--warning)":"var(--success)");
+document.getElementById("rescue-body").innerHTML+=`
+<tr>
+<td><b>${z.zone}</b></td>
+<td>${z.teams}</td>
+<td>${z.evacuated}</td>
+<td>${z.camps}</td>
+<td>${z.assets}</td>
+<td style="color:${rColor};font-weight:bold;">${z.risk}</td>
+</tr>`;
+});
+
+/* FEEDS */
+document.getElementById("supply-feed").innerHTML=`
+<div class="state-card"><b>Air Drop:</b> Medicine kits dropped in Wayanad.</div>
+<div class="state-card"><b>Ground:</b> 5,000 Food packets delivered to Puri.</div>
+`;
+
+document.getElementById("comms-feed").innerHTML=`
+<div class="state-card"><b>HAM Radio:</b> Operational</div>
+<div class="state-card" style="border-left-color:var(--danger)"><b>Sat-Link:</b> Intermittent</div>
+`;
+
+/* ================= CHARTS ================= */
+let chartsInit=false;
+function initCharts(){
+if(chartsInit) return;
+chartsInit=true;
+
+new Chart(document.getElementById("windChart"),{
+type:"line",
+data:{labels:["10","12","14","16"],datasets:[{data:[45,55,78,82],borderColor:"#fbbf24",tension:0.4}]}
+});
+
+new Chart(document.getElementById("riverChart"),{
+type:"line",
+data:{labels:["Mon","Tue","Wed","Thu"],datasets:[{data:[5.2,6.8,8.4,8.1],borderColor:"#38bdf8",tension:0.4}]}
+});
+
+new Chart(document.getElementById("floodChart"),{
+type:"bar",
+data:{labels:["Zone A","Zone B","Zone C","Zone D"],datasets:[{data:[0.8,1.7,1.2,0.5],backgroundColor:"#ef4444"}]}
+});
+
+new Chart(document.getElementById("pressureChart"),{
+type:"line",
+data:{labels:["06","09","12","15"],datasets:[{data:[1005,998,986,992],borderColor:"#10b981",tension:0.4}]}
+});
+
+new Chart(document.getElementById("stormChart"),{
+type:"bar",
+data:{labels:["East Coast","West Coast","Andaman"],datasets:[{data:[3.2,1.1,2.5],backgroundColor:"#38bdf8"}]}
+});
+}
+
+initCharts();
+</script>
+
+</body>
+</html>
 /* ===== NAV ===== */
 function showPage(id,el){
 document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
